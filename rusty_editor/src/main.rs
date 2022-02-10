@@ -76,7 +76,7 @@ impl EditorApp
         return EditorApp {
             m_IsRunning: false,
             m_Timer: Timer::Create(),
-            m_Window: Window::Create("Rusty\0", windowWidth, windowHeight, true),
+            m_Window: Window::Create("Rusty Editor\0", windowWidth, windowHeight, true),
             m_ImGuiPlatform: ImGuiPlatform::Create(),
             m_ImGuiRenderer: ImGuiRenderer::Create(),
             

@@ -156,7 +156,49 @@ impl Scene
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
     pub fn OnRuntimeRender(&self, renderer: &mut SceneRenderer)
     {
-        todo!();
+        // Render the same way as the OnEditRender() for now
+
+        // Setup the environment
+        let mut environment = Environment::Create();
+
+        // Sky light
+        let mut query = <&SkyLightComponent>::query();
+        for slc in query.iter(&self.m_World)
+        {
+            let envMap = AssetManager::GetEnvironmentMap(&slc.EnvironmentMapPath);
+            if envMap.0.IsValid() && envMap.1.IsValid()
+            {
+                environment.SetEnvironmentMap(envMap.0.clone(), envMap.1.clone());
+            }
+            break;
+        }
+
+        // Directional lights
+        let mut query = <(&DirectionalLightComponent, &TransformComponent)>::query();
+        for (dlc, tc) in query.iter(&self.m_World)
+        {
+            let light = Light::CreateDirectionalLight(XMFLOAT3::from(dlc.Color), dlc.Intensity, XMFLOAT3::set(-tc.Position[0], -tc.Position[1], -tc.Position[2]));
+            environment.AddLight(light);
+        }
+
+        // Point lights
+        let mut query = <(&PointLightComponent, &TransformComponent)>::query();
+        for (plc, tc) in query.iter(&self.m_World)
+        {
+            let light = Light::CreatePointLight(XMFLOAT3::from(plc.Color), plc.Intensity, XMFLOAT3::from(tc.Position));
+            environment.AddLight(light);
+        }
+
+        renderer.BeginScene(&self.m_EditorCamera, environment);
+
+        let mut query = <(&MeshComponent, &TransformComponent)>::query();
+        for (mc, tc) in query.iter(&self.m_World)
+        {
+            let mesh: RustyRef<Mesh> = AssetManager::GetMesh(&mc.MeshPath);
+            renderer.SubmitMesh(mesh.clone(), XMMatrixTranspose(tc.Transform()), &Vec::new());
+        }
+
+        renderer.Flush();
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
