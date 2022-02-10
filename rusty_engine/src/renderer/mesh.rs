@@ -6,7 +6,6 @@ use std::path::Path;
 
 // Win32
 use directx_math::*;
-use russimp::texture::TextureType;
 use windows::Win32::Graphics::Direct3D11::*;
 use windows::Win32::Graphics::Dxgi::*;
 
@@ -15,10 +14,10 @@ use crate::renderer::vertex_buffer::*;
 use crate::renderer::index_buffer::*;
 use crate::renderer::material::*;
 use crate::renderer::shader_library::*;
-use crate::renderer::texture::*;
 
 // Core
 use crate::core::utils::*;
+use crate::core::asset_manager::*;
 
 // Other
 use russimp::scene::*;
@@ -94,6 +93,7 @@ impl Mesh
             PostProcess::JoinIdenticalVertices,
             PostProcess::MakeLeftHanded,
             PostProcess::GenerateNormals,
+            PostProcess::GenerateUVCoords,
             PostProcess::PreTransformVertices,
             PostProcess::ValidateDataStructure,
             PostProcess::CalculateTangentSpace]).unwrap();
@@ -146,21 +146,6 @@ impl Mesh
             // Create the material for the submesh
             let material: RustyRef<Material> = Material::Create("UnnamedMaterial", ShaderLibrary::GetShader("mesh_pbr_shader"), MaterialFlags::None);
             let mut materialFlags: MaterialFlags = MaterialFlags::None;
-
-            let mut textureDesc = TextureDescription {
-                Name: String::new(),
-                Width: 0,
-                Height: 0,
-                Format: DXGI_FORMAT_B8G8R8A8_UNORM,
-                BindFlags: D3D11_BIND_SHADER_RESOURCE,
-                MipCount: 7,
-                ImageData: vec![]
-            };
-    
-            let samplerDesc = SamplerDescription {
-                Wrap: D3D11_TEXTURE_ADDRESS_WRAP,
-                Filter: D3D11_FILTER_ANISOTROPIC
-            };
 
             let parentDirectory = Path::new(filepath).parent().unwrap().to_str().unwrap();
 
@@ -225,9 +210,8 @@ impl Mesh
                     {
                         russimp::material::PropertyTypeInfo::String(textureName) => 
                         {
-                            textureDesc.Name = textureName.clone();
-                            textureDesc.ImageData = vec![Some(Image::LoadFromFile(format!("{}/textures/{}", parentDirectory, textureName).as_str(), false))];
-                            material.GetRefMut().SetTexture("AlbedoMap", Texture::CreateTexture2D(&textureDesc, &samplerDesc));
+                            let path = format!("{}/textures/{}", parentDirectory, textureName);
+                            material.GetRefMut().SetTexture("AlbedoMap", AssetManager::LoadTexture(&path, false));
                             material.GetRefMut().SetUniform("UseAlbedoMap", 1);
                         }
                         _ => debug_assert!(false, "Invalid value type!")
@@ -241,9 +225,8 @@ impl Mesh
                     {
                         russimp::material::PropertyTypeInfo::String(textureName) => 
                         {
-                            textureDesc.Name = textureName.clone();
-                            textureDesc.ImageData = vec![Some(Image::LoadFromFile(format!("{}/textures/{}", parentDirectory, textureName).as_str(), false))];
-                            material.GetRefMut().SetTexture("NormalMap", Texture::CreateTexture2D(&textureDesc, &samplerDesc));
+                            let path = format!("{}/textures/{}", parentDirectory, textureName);
+                            material.GetRefMut().SetTexture("NormalMap", AssetManager::LoadTexture(&path, false));
                             material.GetRefMut().SetUniform("UseNormalMap", 1);
                         }
                         _ => debug_assert!(false, "Invalid value type!")
@@ -257,9 +240,8 @@ impl Mesh
                     {
                         russimp::material::PropertyTypeInfo::String(textureName) => 
                         {
-                            textureDesc.Name = textureName.clone();
-                            textureDesc.ImageData = vec![Some(Image::LoadFromFile(format!("{}/textures/{}", parentDirectory, textureName).as_str(), false))];
-                            material.GetRefMut().SetTexture("MetalnessMap", Texture::CreateTexture2D(&textureDesc, &samplerDesc));
+                            let path = format!("{}/textures/{}", parentDirectory, textureName);
+                            material.GetRefMut().SetTexture("MetalnessMap", AssetManager::LoadTexture(&path, false));
                             material.GetRefMut().SetUniform("UseMetalnessMap", 1);
                         }
                         _ => debug_assert!(false, "Invalid value type!")
@@ -273,9 +255,8 @@ impl Mesh
                     {
                         russimp::material::PropertyTypeInfo::String(textureName) => 
                         {
-                            textureDesc.Name = textureName.clone();
-                            textureDesc.ImageData = vec![Some(Image::LoadFromFile(format!("{}/textures/{}", parentDirectory, textureName).as_str(), false))];
-                            material.GetRefMut().SetTexture("RoughnessMap", Texture::CreateTexture2D(&textureDesc, &samplerDesc));
+                            let path = format!("{}/textures/{}", parentDirectory, textureName);
+                            material.GetRefMut().SetTexture("RoughnessMap", AssetManager::LoadTexture(&path, false));
                             material.GetRefMut().SetUniform("UseRoughnessMap", 1);
                         }
                         _ => debug_assert!(false, "Invalid value type!")
@@ -296,6 +277,11 @@ impl Mesh
                         }
                         _ => debug_assert!(false, "Invalid value type!")
                     }
+                }
+
+                if property.key == "$mat.twosided"
+                {
+                    materialFlags |= MaterialFlags::TwoSided;
                 }
             }
 

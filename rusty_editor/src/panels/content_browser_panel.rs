@@ -22,7 +22,7 @@ pub struct ContentBrowserPanel
     m_TGAIcon:    RustyRef<Texture>,
     m_HDRIcon:    RustyRef<Texture>,
     m_FBXIcon:    RustyRef<Texture>,
-    m_HLSLIcon:   RustyRef<Texture>,
+    m_RSceneIcon: RustyRef<Texture>,
 }
 
 impl ContentBrowserPanel
@@ -31,16 +31,16 @@ impl ContentBrowserPanel
     pub fn Create() -> ContentBrowserPanel
     {
         return ContentBrowserPanel {
-            m_AssetsDirectory: PathBuf::new(),
+            m_AssetsDirectory:  PathBuf::new(),
             m_CurrentDirectory: PathBuf::new(),
-            m_CurrentFilepath: String::new(),
-            m_FolderIcon: RustyRef::CreateEmpty(),
-            m_PNGIcon:    RustyRef::CreateEmpty(),
-            m_JPGIcon:    RustyRef::CreateEmpty(),
-            m_TGAIcon:    RustyRef::CreateEmpty(),
-            m_HDRIcon:    RustyRef::CreateEmpty(),
-            m_FBXIcon:    RustyRef::CreateEmpty(),
-            m_HLSLIcon:   RustyRef::CreateEmpty(),
+            m_CurrentFilepath:  String::new(),
+            m_FolderIcon:       RustyRef::CreateEmpty(),
+            m_PNGIcon:          RustyRef::CreateEmpty(),
+            m_JPGIcon:          RustyRef::CreateEmpty(),
+            m_TGAIcon:          RustyRef::CreateEmpty(),
+            m_HDRIcon:          RustyRef::CreateEmpty(),
+            m_FBXIcon:          RustyRef::CreateEmpty(),
+            m_RSceneIcon:       RustyRef::CreateEmpty(),
         };
     }
 
@@ -68,7 +68,6 @@ impl ContentBrowserPanel
                 if filepath.is_ok()
                 {
                     let path = filepath.unwrap().path();
-                    //let relativePath = path.strip_prefix(self.m_AssetsDirectory.as_path()).unwrap();
                     let fileName = path.file_name().unwrap().to_str().unwrap();
                     
                     let groupToken = ui.begin_group();
@@ -164,9 +163,18 @@ impl ContentBrowserPanel
 
                             ui.text_wrapped(im_str!("{}", fileName).as_ref());
                         }
-                        else if fileName.contains(".hlsl")
+                        else if fileName.contains(".rscene")
                         {
-                            imgui::ImageButton::new(TextureId::from(self.m_HLSLIcon.GetRaw()), buttonSize).build(ui);
+                            imgui::ImageButton::new(TextureId::from(self.m_RSceneIcon.GetRaw()), buttonSize).build(ui);
+
+                            if let Some(dragDropSource) = DragDropSource::new(im_str!("DragScenePath")).begin_source()
+                            {
+                                self.m_CurrentFilepath = String::from(path.to_str().unwrap());
+                                let tooltip = dragDropSource.begin_payload(ui, self.m_CurrentFilepath.as_str() as *const str);
+                                ui.text(format!("{}", fileName));
+                                tooltip.end();
+                            }
+
                             ui.text_wrapped(im_str!("{}", fileName).as_ref());
                         }
                         colorToken.pop();
@@ -232,8 +240,8 @@ impl ContentBrowserPanel
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
-    pub fn SetHLSLIcon(&mut self, icon: RustyRef<Texture>)
+    pub fn SetRSceneIcon(&mut self, icon: RustyRef<Texture>)
     {
-        self.m_HLSLIcon = icon;
+        self.m_RSceneIcon = icon;
     }
 }

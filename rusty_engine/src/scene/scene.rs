@@ -1,23 +1,29 @@
 #![allow(non_snake_case)]
 
+use std::io::Read;
+use std::io::Write;
+
 // Win32
 use directx_math::*;
+use serde::de::DeserializeSeed;
 
 // Renderer
 use crate::renderer::editor_camera::*;
 use crate::renderer::scene_renderer::*;
-use crate::renderer::texture::*;
+use crate::renderer::mesh::*;
 use crate::renderer::environment::*;
 
 // Core
 use crate::core::utils::*;
 use crate::core::timestep::*;
+use crate::core::asset_manager::*;
 
 // Scene
 use crate::scene::component::*;
 
 // legion
 use legion::*;
+use legion::serialize::Canon;
 
 #[derive(Copy, Clone, Debug)]
 pub enum SceneState
@@ -111,7 +117,11 @@ impl Scene
         let mut query = <&SkyLightComponent>::query();
         for slc in query.iter(&self.m_World)
         {
-            environment.SetEnvironmentMap(slc.EnvironmentMap.0.clone(), slc.EnvironmentMap.1.clone());
+            let envMap = AssetManager::GetEnvironmentMap(&slc.EnvironmentMapPath);
+            if envMap.0.IsValid() && envMap.1.IsValid()
+            {
+                environment.SetEnvironmentMap(envMap.0.clone(), envMap.1.clone());
+            }
             break;
         }
 
@@ -119,7 +129,7 @@ impl Scene
         let mut query = <(&DirectionalLightComponent, &TransformComponent)>::query();
         for (dlc, tc) in query.iter(&self.m_World)
         {
-            let light = Light::CreateDirectionalLight(dlc.Color, dlc.Intensity, XMFLOAT3::set(-tc.Position.x, -tc.Position.y, -tc.Position.z));
+            let light = Light::CreateDirectionalLight(XMFLOAT3::from(dlc.Color), dlc.Intensity, XMFLOAT3::set(-tc.Position[0], -tc.Position[1], -tc.Position[2]));
             environment.AddLight(light);
         }
 
@@ -127,7 +137,7 @@ impl Scene
         let mut query = <(&PointLightComponent, &TransformComponent)>::query();
         for (plc, tc) in query.iter(&self.m_World)
         {
-            let light = Light::CreatePointLight(plc.Color, plc.Intensity, tc.Position);
+            let light = Light::CreatePointLight(XMFLOAT3::from(plc.Color), plc.Intensity, XMFLOAT3::from(tc.Position));
             environment.AddLight(light);
         }
 
@@ -136,7 +146,8 @@ impl Scene
         let mut query = <(&MeshComponent, &TransformComponent)>::query();
         for (mc, tc) in query.iter(&self.m_World)
         {
-            renderer.SubmitMesh(mc.Mesh.clone(), XMMatrixTranspose(tc.Transform()), &mc.Materials);
+            let mesh: RustyRef<Mesh> = AssetManager::GetMesh(&mc.MeshPath);
+            renderer.SubmitMesh(mesh.clone(), XMMatrixTranspose(tc.Transform()), &Vec::new());
         }
 
         renderer.Flush();
@@ -155,6 +166,60 @@ impl Scene
         self.m_ViewportSize.y = viewportHeight;
 
         self.m_EditorCamera.SetViewportSize(viewportWidth, viewportHeight);
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------------------------------------------
+    pub fn Serialize(&self, filename: &str)
+    {
+        // Create a registry which uses strings as the external type ID
+        let mut registry = Registry::<String>::default();
+        registry.register::<TagComponent>("TagComponent".to_string());
+        registry.register::<TransformComponent>("TransformComponent".to_string());
+        registry.register::<MeshComponent>("MeshComponent".to_string());
+        registry.register::<SkyLightComponent>("SkyLightComponent".to_string());
+        registry.register::<DirectionalLightComponent>("DirectionalLightComponent".to_string());
+        registry.register::<PointLightComponent>("PointLightComponent".to_string());
+
+        let entitySerializer = Canon::default();
+        let sceneFilestring = serde_json::to_string(&self.m_World.as_serializable(legion::any(), &registry, &entitySerializer)).expect("Failed to serialize world!");
+        let mut sceneFile = std::fs::File::create(filename).expect("Failed to create scene file!");
+        sceneFile.write_all(sceneFilestring.as_bytes()).expect("Writing to the scene file failed!");
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------------------------------------------
+    pub fn Deserialize(&mut self, filename: &str)
+    {
+        // Read the file
+        let mut sceneFile = std::fs::File::open(filename).expect("Failed to open scene file");
+        let mut fileContent = String::new();
+        sceneFile.read_to_string(&mut fileContent).expect("Failed reading the scene file!");
+
+        
+        // Create a registry which uses strings as the external type ID
+        let mut registry = Registry::<String>::default();
+        registry.register::<TagComponent>("TagComponent".to_string());
+        registry.register::<TransformComponent>("TransformComponent".to_string());
+        registry.register::<MeshComponent>("MeshComponent".to_string());
+        registry.register::<SkyLightComponent>("SkyLightComponent".to_string());
+        registry.register::<DirectionalLightComponent>("DirectionalLightComponent".to_string());
+        registry.register::<PointLightComponent>("PointLightComponent".to_string());
+        
+        let json: serde_json::Value = serde_json::from_str(&fileContent).expect("");
+        let entityDeserializer = Canon::default();
+        self.m_World = registry.as_deserialize(&entityDeserializer).deserialize(&json).expect("Failed to deserialize the scene!");
+
+        // Load assets
+        let mut query = <&SkyLightComponent>::query();
+        for slc in query.iter(&self.m_World)
+        {
+            AssetManager::LoadEnvironmentMap(&slc.EnvironmentMapPath);
+        }
+
+        let mut query = <&MeshComponent>::query();
+        for mc in query.iter(&self.m_World)
+        {
+            AssetManager::LoadMesh(&mc.MeshPath);
+        }
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------

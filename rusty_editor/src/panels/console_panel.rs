@@ -88,7 +88,7 @@ impl Console
     
                     match message.Category
                     {
-                        MessageCategory::Info =>    { color = [1.0, 1.0, 1.0, 1.0]; },    
+                        MessageCategory::Info =>    { color = [0.0, 1.0, 0.0, 1.0]; },    
                         MessageCategory::Warning => { color = [1.0, 1.0, 0.0, 1.0]; },    
                         MessageCategory::Error =>   { color = [1.0, 0.0, 0.0, 1.0]; }    
                     }

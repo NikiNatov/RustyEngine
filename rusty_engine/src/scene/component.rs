@@ -3,22 +3,12 @@
 // Win32
 use directx_math::*;
 
-// Core
-use crate::core::utils::*;
-
-// Renderer
-use crate::renderer::mesh::*;
-use crate::renderer::material::*;
-use crate::renderer::texture::*;
-use crate::renderer::renderer::*;
-
 // Serialization
-use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde::Deserialize;
-use serde::Deserializer;
+use serde::Serialize;
 
 // ---------------------------------------------------------------- Tag Component ---------------------------------------------------------------- //
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TagComponent
 {
     pub Tag: String
@@ -38,12 +28,12 @@ unsafe impl Send for TagComponent {}
 unsafe impl Sync for TagComponent {}
 
 // ---------------------------------------------------------------- Transform Component ---------------------------------------------------------- //
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransformComponent
 {
-    pub Position: XMFLOAT3,
-    pub Rotation: XMFLOAT3,
-    pub Scale:    XMFLOAT3,
+    pub Position: [f32; 3],
+    pub Rotation: [f32; 3],
+    pub Scale:    [f32; 3],
 }
 
 impl TransformComponent
@@ -51,11 +41,11 @@ impl TransformComponent
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
     pub fn Transform(&self) -> XMMATRIX
     {
-        let translation: XMMATRIX = XMMatrixTranslation(self.Position.x, self.Position.y, self.Position.z);
-        let rotationX: XMMATRIX = XMMatrixRotationX(XMConvertToRadians(self.Rotation.x));
-        let rotationY: XMMATRIX = XMMatrixRotationY(XMConvertToRadians(self.Rotation.y));
-        let rotationZ: XMMATRIX = XMMatrixRotationZ(XMConvertToRadians(self.Rotation.z));
-        let scale: XMMATRIX = XMMatrixScaling(self.Scale.x, self.Scale.y, self.Scale.z);
+        let translation: XMMATRIX = XMMatrixTranslation(self.Position[0], self.Position[1], self.Position[2]);
+        let rotationX: XMMATRIX = XMMatrixRotationX(XMConvertToRadians(self.Rotation[0]));
+        let rotationY: XMMATRIX = XMMatrixRotationY(XMConvertToRadians(self.Rotation[1]));
+        let rotationZ: XMMATRIX = XMMatrixRotationZ(XMConvertToRadians(self.Rotation[2]));
+        let scale: XMMATRIX = XMMatrixScaling(self.Scale[0], self.Scale[1], self.Scale[2]);
 
         let mut transform: XMMATRIX = XMMatrixIdentity();
         transform = XMMatrixMultiply(translation, &transform);
@@ -73,24 +63,10 @@ impl Default for TransformComponent
     fn default() -> TransformComponent
     {
         return TransformComponent {
-            Position: XMFLOAT3::set(0.0, 0.0, 0.0),
-            Rotation: XMFLOAT3::set(0.0, 0.0, 0.0),
-            Scale: XMFLOAT3::set(1.0, 1.0, 1.0)
+            Position: [0.0, 0.0, 0.0],
+            Rotation: [0.0, 0.0, 0.0],
+            Scale:    [1.0, 1.0, 1.0]
         }
-    }
-}
-
-impl Serialize for TransformComponent 
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut transformStruct = serializer.serialize_struct("TransformComponent", 3)?;
-        transformStruct.serialize_field("Position", self.Position.as_ref())?;
-        transformStruct.serialize_field("Rotation", self.Rotation.as_ref())?;
-        transformStruct.serialize_field("Scale", self.Scale.as_ref())?;
-        transformStruct.end()
     }
 }
 
@@ -98,11 +74,10 @@ unsafe impl Send for TransformComponent {}
 unsafe impl Sync for TransformComponent {}
 
 // ------------------------------------------------------------------- Mesh Component ------------------------------------------------------------ //
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MeshComponent
 {
-    pub Mesh:      RustyRef<Mesh>,
-    pub Materials: Vec<RustyRef<Material>>
+    pub MeshPath:  String,
 }
 
 impl Default for MeshComponent
@@ -110,22 +85,8 @@ impl Default for MeshComponent
     fn default() -> MeshComponent
     {
         return MeshComponent {
-            Mesh: Mesh::CreateCube(1.0),
-            Materials: vec![]         
+            MeshPath: String::new(),
         }
-    }
-}
-
-impl Serialize for MeshComponent 
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut meshStruct = serializer.serialize_struct("MeshComponent", 3)?;
-        meshStruct.serialize_field("Mesh", self.Mesh.GetRef().GetFilepath())?;
-        meshStruct.serialize_field("Materials", self.Mesh.GetRef().GetMaterials())?;
-        meshStruct.end()
     }
 }
 
@@ -133,11 +94,11 @@ unsafe impl Send for MeshComponent {}
 unsafe impl Sync for MeshComponent {}
 
 // ------------------------------------------------------------------- Sky Light Component ------------------------------------------------------------ //
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SkyLightComponent
 {
-    pub EnvironmentMap: (RustyRef<Texture>, RustyRef<Texture>),
-    pub Intensity:      f32
+    pub EnvironmentMapPath: String,
+    pub Intensity:          f32
 }
 
 impl Default for SkyLightComponent
@@ -145,7 +106,7 @@ impl Default for SkyLightComponent
     fn default() -> SkyLightComponent
     {
         return SkyLightComponent {
-            EnvironmentMap: (Renderer::GetBlackTextureCube(), Renderer::GetBlackTextureCube()),
+            EnvironmentMapPath: String::new(),
             Intensity: 1.0     
         }
     }
@@ -155,10 +116,10 @@ unsafe impl Send for SkyLightComponent {}
 unsafe impl Sync for SkyLightComponent {}
 
 // ------------------------------------------------------------------- Directional Light Component ------------------------------------------------------------ //
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DirectionalLightComponent
 {
-    pub Color:     XMFLOAT3,
+    pub Color:     [f32; 3],
     pub Intensity: f32
 }
 
@@ -167,22 +128,9 @@ impl Default for DirectionalLightComponent
     fn default() -> DirectionalLightComponent
     {
         return DirectionalLightComponent {
-            Color: XMFLOAT3::set(1.0, 1.0, 1.0),
+            Color: [1.0, 1.0, 1.0],
             Intensity: 1.0
         }
-    }
-}
-
-impl Serialize for DirectionalLightComponent 
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut dirLightStruct = serializer.serialize_struct("DirectionalLightComponent", 2)?;
-        dirLightStruct.serialize_field("Color", self.Color.as_ref())?;
-        dirLightStruct.serialize_field("Intensity", &self.Intensity)?;
-        dirLightStruct.end()
     }
 }
 
@@ -190,10 +138,10 @@ unsafe impl Send for DirectionalLightComponent {}
 unsafe impl Sync for DirectionalLightComponent {}
 
 // ------------------------------------------------------------------- Point Light Component ------------------------------------------------------------ //
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct PointLightComponent
 {
-    pub Color:     XMFLOAT3,
+    pub Color:     [f32; 3],
     pub Intensity: f32
 }
 
@@ -202,22 +150,9 @@ impl Default for PointLightComponent
     fn default() -> PointLightComponent
     {
         return PointLightComponent {
-            Color: XMFLOAT3::set(1.0, 1.0, 1.0),
+            Color: [1.0, 1.0, 1.0],
             Intensity: 1.0
         }
-    }
-}
-
-impl Serialize for PointLightComponent 
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut pointLightStruct = serializer.serialize_struct("PointLightComponent", 2)?;
-        pointLightStruct.serialize_field("Color", self.Color.as_ref())?;
-        pointLightStruct.serialize_field("Intensity", &self.Intensity)?;
-        pointLightStruct.end()
     }
 }
 

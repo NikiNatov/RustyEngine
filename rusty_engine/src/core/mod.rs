@@ -16,3 +16,9 @@ pub use self::timestep::*;
 
 pub mod timer;
 pub use self::timer::*;
+
+pub mod asset_manager;
+pub use self::asset_manager::*;
+
+pub mod file_dialog;
+pub use self::file_dialog::*;

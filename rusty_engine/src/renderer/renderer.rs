@@ -59,8 +59,8 @@ impl Renderer
             renderer.GetRefMut().m_GfxContext = graphicsContext;
 
             // Load all shaders
-            let shadersFolder = "assets/shaders";
-            let computeShadersFolder = "assets/compute_shaders";
+            let shadersFolder = "rusty_engine/assets/shaders";
+            let computeShadersFolder = "rusty_engine/assets/compute_shaders";
 
             // Regular shaders
             for shaderEntry in std::fs::read_dir(shadersFolder).unwrap()

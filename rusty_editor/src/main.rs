@@ -16,15 +16,11 @@ use panels::content_browser_panel::*;
 // Win32
 use directx_math::*;
 use windows::Win32::Graphics::Direct3D11::*;
-use windows::Win32::Graphics::Dxgi::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 
 // rusty_engine
-use rusty_engine::renderer::shader_library::*;
-use rusty_engine::renderer::material::*;
 use rusty_engine::renderer::texture::*;
 use rusty_engine::renderer::scene_renderer::*;
-use rusty_engine::renderer::mesh::*;
 use rusty_engine::renderer::renderer::*;
 use rusty_engine::imgui::imgui_renderer::*;
 use rusty_engine::imgui::imgui_platform::*;
@@ -36,6 +32,8 @@ use rusty_engine::core::window_event::*;
 use rusty_engine::core::keyboard_event::*;
 use rusty_engine::core::window::*;
 use rusty_engine::core::utils::*;
+use rusty_engine::core::file_dialog::*;
+use rusty_engine::core::asset_manager::*;
 use rusty_engine::scene::scene::*;
 use rusty_engine::scene::entity::*;
 use rusty_engine::scene::component::*;
@@ -62,7 +60,7 @@ pub struct EditorApp
     m_TGAIcon:       RustyRef<Texture>,
     m_HDRIcon:       RustyRef<Texture>,
     m_FBXIcon:       RustyRef<Texture>,
-    m_HLSLIcon:      RustyRef<Texture>,
+    m_RSceneIcon:    RustyRef<Texture>,
 
     // Panels
     m_SceneHierarchyPanel:    SceneHierarchyPanel,
@@ -96,7 +94,7 @@ impl EditorApp
             m_TGAIcon:    RustyRef::CreateEmpty(),
             m_HDRIcon:    RustyRef::CreateEmpty(),
             m_FBXIcon:    RustyRef::CreateEmpty(),
-            m_HLSLIcon:   RustyRef::CreateEmpty(),
+            m_RSceneIcon: RustyRef::CreateEmpty(),
 
             m_SceneHierarchyPanel: SceneHierarchyPanel::Create(),
             m_MaterialInspectorPanel: MaterialInspectorPanel::Create(),
@@ -116,48 +114,26 @@ impl EditorApp
         self.m_SceneRenderer.Initialize();
 
         // Load editor textures and icons
-        let mut textureDesc = TextureDescription {
-            Name: String::new(),
-            Width: 0,
-            Height: 0,
-            Format: DXGI_FORMAT_B8G8R8A8_UNORM,
-            BindFlags: D3D11_BIND_SHADER_RESOURCE,
-            MipCount: 7,
-            ImageData: vec![]
-        };
-
-        let samplerDesc = SamplerDescription {
-            Wrap: D3D11_TEXTURE_ADDRESS_WRAP,
-            Filter: D3D11_FILTER_ANISOTROPIC
-        };
-
-        textureDesc.ImageData = vec![Some(Image::LoadFromFile("rusty_editor/assets/folder_icon.png", true))];
-        self.m_FolderIcon = Texture::CreateTexture2D(&textureDesc, &samplerDesc);
+        self.m_FolderIcon = AssetManager::LoadTexture("rusty_editor/assets/folder_icon.png", true);
         self.m_ImGuiRenderer.GetTextures().replace(imgui::TextureId::from(self.m_FolderIcon.GetRaw()), self.m_FolderIcon.GetRef().CreateSRV());
 
-        textureDesc.ImageData = vec![Some(Image::LoadFromFile("rusty_editor/assets/png_icon.png", true))];
-        self.m_PNGIcon = Texture::CreateTexture2D(&textureDesc, &samplerDesc);
+        self.m_PNGIcon = AssetManager::LoadTexture("rusty_editor/assets/png_icon.png", true);
         self.m_ImGuiRenderer.GetTextures().replace(imgui::TextureId::from(self.m_PNGIcon.GetRaw()), self.m_PNGIcon.GetRef().CreateSRV());
 
-        textureDesc.ImageData = vec![Some(Image::LoadFromFile("rusty_editor/assets/jpg_icon.png", true))];
-        self.m_JPGIcon = Texture::CreateTexture2D(&textureDesc, &samplerDesc);
+        self.m_JPGIcon = AssetManager::LoadTexture("rusty_editor/assets/jpg_icon.png", true);
         self.m_ImGuiRenderer.GetTextures().replace(imgui::TextureId::from(self.m_JPGIcon.GetRaw()), self.m_JPGIcon.GetRef().CreateSRV());
 
-        textureDesc.ImageData = vec![Some(Image::LoadFromFile("rusty_editor/assets/tga_icon.png", true))];
-        self.m_TGAIcon = Texture::CreateTexture2D(&textureDesc, &samplerDesc);
+        self.m_TGAIcon = AssetManager::LoadTexture("rusty_editor/assets/tga_icon.png", true);
         self.m_ImGuiRenderer.GetTextures().replace(imgui::TextureId::from(self.m_TGAIcon.GetRaw()), self.m_TGAIcon.GetRef().CreateSRV());
 
-        textureDesc.ImageData = vec![Some(Image::LoadFromFile("rusty_editor/assets/hdr_icon.png", true))];
-        self.m_HDRIcon = Texture::CreateTexture2D(&textureDesc, &samplerDesc);
+        self.m_HDRIcon = AssetManager::LoadTexture("rusty_editor/assets/hdr_icon.png", true);
         self.m_ImGuiRenderer.GetTextures().replace(imgui::TextureId::from(self.m_HDRIcon.GetRaw()), self.m_HDRIcon.GetRef().CreateSRV());
 
-        textureDesc.ImageData = vec![Some(Image::LoadFromFile("rusty_editor/assets/fbx_icon.png", true))];
-        self.m_FBXIcon = Texture::CreateTexture2D(&textureDesc, &samplerDesc);
+        self.m_FBXIcon = AssetManager::LoadTexture("rusty_editor/assets/fbx_icon.png", true);
         self.m_ImGuiRenderer.GetTextures().replace(imgui::TextureId::from(self.m_FBXIcon.GetRaw()), self.m_FBXIcon.GetRef().CreateSRV());
 
-        textureDesc.ImageData = vec![Some(Image::LoadFromFile("rusty_editor/assets/hlsl_icon.png", true))];
-        self.m_HLSLIcon = Texture::CreateTexture2D(&textureDesc, &samplerDesc);
-        self.m_ImGuiRenderer.GetTextures().replace(imgui::TextureId::from(self.m_HLSLIcon.GetRaw()), self.m_HLSLIcon.GetRef().CreateSRV());
+        self.m_RSceneIcon = AssetManager::LoadTexture("rusty_editor/assets/rscene_icon.png", true);
+        self.m_ImGuiRenderer.GetTextures().replace(imgui::TextureId::from(self.m_RSceneIcon.GetRaw()), self.m_RSceneIcon.GetRef().CreateSRV());
 
         // Create scene
         self.m_Scene = Scene::Create();
@@ -170,8 +146,8 @@ impl EditorApp
         self.m_ContentBrowserPanel.SetJPGIcon(self.m_JPGIcon.clone());
         self.m_ContentBrowserPanel.SetTGAIcon(self.m_TGAIcon.clone());
         self.m_ContentBrowserPanel.SetHDRIcon(self.m_HDRIcon.clone());
-        self.m_ContentBrowserPanel.SetHLSLIcon(self.m_HLSLIcon.clone());
         self.m_ContentBrowserPanel.SetFBXIcon(self.m_FBXIcon.clone());
+        self.m_ContentBrowserPanel.SetRSceneIcon(self.m_RSceneIcon.clone());
 
         Console::LogInfo("Welcome to Rusty Engine!");
 
@@ -250,24 +226,33 @@ impl EditorApp
                 ui.dock_space(imgui::Id::from("MyDockSpace"), [0.0, 0.0]);
 
                 // Menu bar
-                ui.menu_bar(||
+                if let Some(menuBarToken) = ui.begin_menu_bar()
                 {
-                    let menuToken = ui.begin_menu(im_str!("File"));
-                    if menuToken.is_some()
+                    if let Some(menuToken) = ui.begin_menu(im_str!("File"))
                     {
-                        let menuToken = menuToken.unwrap();
-                        if imgui::MenuItem::new(im_str!("New")).shortcut(im_str!("Ctrl+N")).build(&ui)
+                        if imgui::MenuItem::new(im_str!("New Scene")).shortcut(im_str!("Ctrl+N")).build(&ui)
                         {
+                            self.m_Scene = Scene::Create();
+                            self.m_SceneHierarchyPanel.SetContext(self.m_Scene.clone());
                         }
-                        if imgui::MenuItem::new(im_str!("Open")).shortcut(im_str!("Ctrl+O")).build(&ui)
+                        if imgui::MenuItem::new(im_str!("Open Scene")).shortcut(im_str!("Ctrl+O")).build(&ui)
                         {
+                            let scenePath = OpenFile(String::from("Rusty Scene (*.rscene)\0*.rscene\0"));
+                            self.m_Scene = Scene::Create();
+                            self.m_Scene.GetRefMut().Deserialize(&scenePath);
+                            self.m_SceneHierarchyPanel.SetContext(self.m_Scene.clone());
+                            Console::LogInfo("Scene opened successfully!");
                         }
-                        if imgui::MenuItem::new(im_str!("Save")).shortcut(im_str!("Ctrl+S")).build(&ui)
+                        if imgui::MenuItem::new(im_str!("Save As")).shortcut(im_str!("Ctrl+S")).build(&ui)
                         {
+                            let scenePath = SaveFile(String::from("Rusty Scene (*.rscene)\0*.rscene\0"));
+                            self.m_Scene.GetRef().Serialize(&scenePath);
+                            Console::LogInfo("Scene saved successfully!");
                         }
                         menuToken.end();
                     }
-                });
+                    menuBarToken.end();
+                }
 
                 // Renderer Info
                 if let Some(rendererInfo) = imgui::Window::new(im_str!("Renderer info")).begin(&ui)
@@ -286,7 +271,8 @@ impl EditorApp
                 let selectedEntity: Entity = self.m_SceneHierarchyPanel.GetSelectedEntity();
                 if selectedEntity.IsValid() && selectedEntity.HasComponent::<MeshComponent>()
                 {
-                    self.m_MaterialInspectorPanel.SetSelectedMesh(self.m_SceneHierarchyPanel.GetSelectedEntity().GetComponent::<MeshComponent>().Mesh.clone());
+                    let meshPath = self.m_SceneHierarchyPanel.GetSelectedEntity().GetComponent::<MeshComponent>().MeshPath.clone();
+                    self.m_MaterialInspectorPanel.SetSelectedMesh(AssetManager::GetMesh(&meshPath));
                 }
 
                 // Pannels
@@ -295,10 +281,10 @@ impl EditorApp
                 self.m_MaterialInspectorPanel.OnImGuiRender(&ui, &mut self.m_ImGuiRenderer);
                 self.m_ContentBrowserPanel.OnImGuiRender(&ui);
 
-                if let Some(exposure) = imgui::Window::new(im_str!("Exposure")).begin(&ui)
+                if let Some(exposure) = imgui::Window::new(im_str!("Camera Settings")).begin(&ui)
                 {
                     let slider: imgui::Slider<f32> = imgui::Slider::new(im_str!("Exposure"));
-                    let range: std::ops::RangeInclusive<f32> = std::ops::RangeInclusive::new(0.0, 8.0);
+                    let range: std::ops::RangeInclusive<f32> = std::ops::RangeInclusive::new(0.1, 8.0);
                     slider.range(range).build(&ui, self.m_SceneRenderer.GetExposure());
 
                     exposure.end();
@@ -335,20 +321,28 @@ impl EditorApp
                     if let Some(target) = imgui::DragDropTarget::new(&ui) 
                     {
                         if let Some(Ok(payloadData)) = target
-                            .accept_payload::<*const str>(im_str!("DragMeshPath"), imgui::DragDropFlags::empty())
+                                .accept_payload::<*const str>(im_str!("DragMeshPath"), imgui::DragDropFlags::empty())
                         {
                             // We know it is safe to dereference the pointer since it points to a string owned by the content browser panel
                             // and it lives through the whole application
                             let meshPath = unsafe { &*payloadData.data };
-                            let mesh: RustyRef<Mesh> = Mesh::LoadFromFile(meshPath);
+                            let mesh = AssetManager::LoadMesh(meshPath);
                             let mut meshEntity: Entity = self.m_Scene.GetRefMut().CreateEntity(mesh.GetRef().GetName());
 
                             let mc: MeshComponent = MeshComponent { 
-                                Mesh: mesh, 
-                                Materials: vec![]
+                                MeshPath: String::from(meshPath), 
                             };
 
                             meshEntity.AddComponent(mc);
+                        }
+                        else if let Some(Ok(payloadData)) = target
+                                    .accept_payload::<*const str>(im_str!("DragScenePath"), imgui::DragDropFlags::empty())
+                        {
+                            let scenePath = unsafe { &*payloadData.data };
+                            self.m_Scene = Scene::Create();
+                            self.m_Scene.GetRefMut().Deserialize(scenePath);
+                            self.m_SceneHierarchyPanel.SetContext(self.m_Scene.clone());
+                            Console::LogInfo("Scene opened successfully!");
                         }
 
                         target.pop();
@@ -382,11 +376,11 @@ impl EditorApp
                             let mut scale = [0.0, 0.0, 0.0];
                             imguizmo::decompose_matrix_to_components(&transform.m, &mut position, &mut rotation, &mut scale);
 
-                            let deltaRotation = XMFLOAT3::set(rotation[0] - tc.Rotation.x, rotation[1] - tc.Rotation.y, rotation[2] - tc.Rotation.z);
+                            let deltaRotation = [rotation[0] - tc.Rotation[0], rotation[1] - tc.Rotation[1], rotation[2] - tc.Rotation[2]];
 
-                            tc.Position = XMFLOAT3::from(position);
-                            tc.Rotation = XMFLOAT3::set(tc.Rotation.x + deltaRotation.x, tc.Rotation.y + deltaRotation.y, tc.Rotation.z + deltaRotation.z);
-                            tc.Scale = XMFLOAT3::from(scale);
+                            tc.Position = position;
+                            tc.Rotation = [tc.Rotation[0] + deltaRotation[0], tc.Rotation[1] + deltaRotation[1], tc.Rotation[2] + deltaRotation[2]];
+                            tc.Scale    = scale;
                         }
                     }
 
@@ -437,22 +431,42 @@ impl EditorApp
         if event.GetKeyCode() == VK_T
         {
             self.m_GizmoOperation = imguizmo::Operation::Translate;
-            Console::LogWarning("Gizmo operation: Translate");
+            Console::LogInfo("Gizmo operation: Translate");
         }
         else if event.GetKeyCode() == VK_R
         {
             self.m_GizmoOperation = imguizmo::Operation::Rotate;
-            Console::LogWarning("Gizmo operation: Rotate");
+            Console::LogInfo("Gizmo operation: Rotate");
         }
         else if event.GetKeyCode() == VK_E
         {
             self.m_GizmoOperation = imguizmo::Operation::Scale;
-            Console::LogWarning("Gizmo operation: Scale");
+            Console::LogInfo("Gizmo operation: Scale");
         }
         else if event.GetKeyCode() == VK_Q
         {
             self.m_GizmoOperation = imguizmo::Operation::Bounds;
-            Console::LogWarning("Gizmo hidden");
+            Console::LogInfo("Gizmo hidden");
+        }
+
+        if Input::IsKeyPressed(VK_LCONTROL) && event.GetKeyCode() == VK_N
+        {
+            self.m_Scene = Scene::Create();
+            self.m_SceneHierarchyPanel.SetContext(self.m_Scene.clone());
+        }
+        else if Input::IsKeyPressed(VK_LCONTROL) && event.GetKeyCode() == VK_O
+        {
+            let scenePath = OpenFile(String::from("Rusty Scene (*.rscene)\0*.rscene\0"));
+            self.m_Scene = Scene::Create();
+            self.m_Scene.GetRefMut().Deserialize(&scenePath);
+            self.m_SceneHierarchyPanel.SetContext(self.m_Scene.clone());
+            Console::LogInfo("Scene opened successfully!");
+        }
+        else if Input::IsKeyPressed(VK_LCONTROL) && event.GetKeyCode() == VK_S
+        {
+            let scenePath = SaveFile(String::from("Rusty Scene (*.rscene)\0*.rscene\0"));
+            self.m_Scene.GetRef().Serialize(&scenePath);
+            Console::LogInfo("Scene saved successfully!");
         }
     }
 }

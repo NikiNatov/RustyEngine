@@ -344,11 +344,11 @@ impl Window
         }
         else if Msg == WM_SIZE
         {
-            if wParam.0 == SIZE_MINIMIZED.try_into().unwrap()
+            if wParam.0 == SIZE_MINIMIZED as usize
             {
                 (*window).SetMinimized(true);
             }
-            else if wParam.0 == SIZE_RESTORED.try_into().unwrap()
+            else if wParam.0 == SIZE_RESTORED as usize
             {
                 (*window).SetMinimized(false);
             }

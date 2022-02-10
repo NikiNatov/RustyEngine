@@ -18,9 +18,7 @@ use rusty_engine::core::utils::*;
 use rusty_engine::scene::component::*;
 use rusty_engine::scene::scene::*;
 use rusty_engine::scene::entity::*;
-use rusty_engine::renderer::mesh::*;
-use rusty_engine::renderer::renderer::*;
-use rusty_engine::renderer::command_buffer::*;
+use rusty_engine::core::asset_manager::*;
 
 pub struct SceneHierarchyPanel
 {
@@ -177,7 +175,7 @@ impl SceneHierarchyPanel
                         ui.text("Mesh");
                         ui.next_column();
 
-                        let mut meshName = ImString::from(component.Mesh.GetRef().GetName().clone());
+                        let mut meshName = ImString::from(component.MeshPath.clone());
                         ui.input_text(im_str!("##Mesh"), &mut meshName).read_only(true).build();
 
                         // If drag drop payload is accepted load the mesh with the sent path 
@@ -189,7 +187,8 @@ impl SceneHierarchyPanel
                                 // We know it is safe to dereference the pointer since it points to a string owned by the content browser panel
                                 // and it lives through the whole application
                                 let meshPath = unsafe { &*payloadData.data };
-                                component.Mesh = Mesh::LoadFromFile(meshPath);
+                                AssetManager::LoadMesh(meshPath);
+                                component.MeshPath = String::from(meshPath);
                             }
 
                             target.pop();
@@ -197,37 +196,42 @@ impl SceneHierarchyPanel
 
                         ui.columns(1, im_str!("MeshName"), true);
 
-                        let meshRef = component.Mesh.GetRef();
-                        let materials = meshRef.GetMaterials();
+                        let mesh = AssetManager::GetMesh(&component.MeshPath);
 
-                        let flags = TreeNodeFlags::SPAN_AVAIL_WIDTH | TreeNodeFlags::FRAME_PADDING | TreeNodeFlags::DEFAULT_OPEN;
-                        let nodeID: &ImStr = meshName.as_ref();
-                        TreeNode::new(TreeNodeId::from(nodeID))
-                                    .flags(flags)
-                                    .label(im_str!("Submeshes")).build(ui, || 
+                        if mesh.IsValid()
                         {
+                            let meshRef = mesh.GetRef();
+                            let materials = meshRef.GetMaterials();
 
-                            for submesh in meshRef.GetSubmeshes()
+                            let flags = TreeNodeFlags::SPAN_AVAIL_WIDTH | TreeNodeFlags::FRAME_PADDING | TreeNodeFlags::DEFAULT_OPEN;
+                            let nodeID: &ImStr = meshName.as_ref();
+                            TreeNode::new(TreeNodeId::from(nodeID))
+                                        .flags(flags)
+                                        .label(im_str!("Submeshes")).build(ui, || 
                             {
-                                let mut materialName = ImString::from(materials[submesh.MaterialIndex as usize].GetRef().GetName().clone());
 
-                                let id = im_str!("Submeshes##{}{}", &submesh.Name, &materialName);
-                                let idToken = ui.push_id(&id);
+                                for submesh in meshRef.GetSubmeshes()
+                                {
+                                    let mut materialName = ImString::from(materials[submesh.MaterialIndex as usize].GetRef().GetName().clone());
 
-                                ui.columns(2, &id, true);
-                                ui.set_column_width(0, 100.0);
-                                ui.text(&submesh.Name);
-                                ui.next_column();
+                                    let id = im_str!("Submeshes##{}{}", &submesh.Name, &materialName);
+                                    let idToken = ui.push_id(&id);
 
-                                ui.input_text(im_str!(""), &mut materialName).read_only(true).build();
+                                    ui.columns(2, &id, true);
+                                    ui.set_column_width(0, 100.0);
+                                    ui.text(&submesh.Name);
+                                    ui.next_column();
 
-                                // TODO: Add material overriding when we have material files
+                                    ui.input_text(im_str!(""), &mut materialName).read_only(true).build();
 
-                                ui.columns(1, &id, true);
+                                    // TODO: Add material overriding when we have material files
 
-                                idToken.pop();
-                            }
-                        });
+                                    ui.columns(1, &id, true);
+
+                                    idToken.pop();
+                                }
+                            });
+                        }
                     });
                 }
 
@@ -241,7 +245,7 @@ impl SceneHierarchyPanel
                         ui.text("Environment Map");
                         ui.next_column();
 
-                        let mut environmentMapName = ImString::from(component.EnvironmentMap.0.GetRef().GetName().clone());
+                        let mut environmentMapName = ImString::from(component.EnvironmentMapPath.clone());
                         ui.input_text(im_str!("##EnvironmentMap"), &mut environmentMapName).read_only(true).build();
 
                         // If drag drop payload is accepted load the environment map with the sent path 
@@ -253,11 +257,8 @@ impl SceneHierarchyPanel
                                 // We know it is safe to dereference the pointer since it points to a string owned by the content browser panel
                                 // and it lives through the whole application
                                 let envMapPath: &str = unsafe { &*payloadData.data };
-
-                                let commandBuffer: RustyRef<CommandBuffer> = CommandBuffer::Create();
-                                component.EnvironmentMap = Renderer::CreateEnvironmentMap(commandBuffer.clone(), envMapPath);
-                                commandBuffer.GetRefMut().Finish();
-                                Renderer::GetGfxContext().GetRefMut().ExecuteCommandBuffer(commandBuffer);
+                                AssetManager::LoadEnvironmentMap(envMapPath);
+                                component.EnvironmentMapPath = String::from(envMapPath);
                             }
 
                             target.pop();
@@ -289,7 +290,7 @@ impl SceneHierarchyPanel
                         ui.set_column_width(0, 100.0);
                         ui.text("Color");
                         ui.next_column();
-                        imgui::ColorEdit::new(im_str!("##DirLightColor"), component.Color.as_mut()).build(&ui);
+                        imgui::ColorEdit::new(im_str!("##DirLightColor"), &mut component.Color).build(&ui);
                         ui.columns(1, im_str!("EnvironmentMap"), true);
 
                         ui.columns(2, im_str!("DirectionalLight"), true);
@@ -314,7 +315,7 @@ impl SceneHierarchyPanel
                         ui.set_column_width(0, 100.0);
                         ui.text("Color");
                         ui.next_column();
-                        imgui::ColorEdit::new(im_str!("##PointLightColor"), component.Color.as_mut()).build(&ui);
+                        imgui::ColorEdit::new(im_str!("##PointLightColor"), &mut component.Color).build(&ui);
                         ui.columns(1, im_str!("EnvironmentMap"), true);
 
                         ui.columns(2, im_str!("PointLight"), true);
@@ -418,7 +419,7 @@ impl SceneHierarchyPanel
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
-    fn DrawVec3Control(ui: &Ui, label: &str, values: &mut XMFLOAT3, resetValue: f32, columnWidth: f32)
+    fn DrawVec3Control(ui: &Ui, label: &str, values: &mut [f32; 3], resetValue: f32, columnWidth: f32)
     {
         let labelStr: ImString = im_str!("{}", label);
         let id: &ImStr = labelStr.as_ref();
@@ -444,7 +445,7 @@ impl SceneHierarchyPanel
 
         if ui.button_with_size(im_str!("X"), buttonSize)
         {
-            values.x = resetValue;
+            values[0] = resetValue;
         }
 
         buttonActiveColorToken.pop();
@@ -452,7 +453,7 @@ impl SceneHierarchyPanel
         buttonColorToken.pop();
 
         ui.same_line();
-        imgui::Drag::new(im_str!("##X")).speed(0.1).build(ui, &mut values.x);
+        imgui::Drag::new(im_str!("##X")).speed(0.1).build(ui, &mut values[0]);
         itemWidthToken.pop(ui);
 
         // Y Component
@@ -464,7 +465,7 @@ impl SceneHierarchyPanel
 
         if ui.button_with_size(im_str!("Y"), buttonSize)
         {
-            values.y = resetValue;
+            values[1] = resetValue;
         }
 
         buttonActiveColorToken.pop();
@@ -472,7 +473,7 @@ impl SceneHierarchyPanel
         buttonColorToken.pop();
 
         ui.same_line();
-        imgui::Drag::new(im_str!("##Y")).speed(0.1).build(ui, &mut values.y);
+        imgui::Drag::new(im_str!("##Y")).speed(0.1).build(ui, &mut values[1]);
         itemWidthToken.pop(ui);
 
         // Z Component
@@ -484,7 +485,7 @@ impl SceneHierarchyPanel
 
         if ui.button_with_size(im_str!("Z"), buttonSize)
         {
-            values.z = resetValue;
+            values[2] = resetValue;
         }
 
         buttonActiveColorToken.pop();
@@ -492,7 +493,7 @@ impl SceneHierarchyPanel
         buttonColorToken.pop();
 
         ui.same_line();
-        imgui::Drag::new(im_str!("##Z")).speed(0.1).build(ui, &mut values.z);
+        imgui::Drag::new(im_str!("##Z")).speed(0.1).build(ui, &mut values[2]);
         itemWidthToken.pop(ui);
 
         spacingToken.pop();

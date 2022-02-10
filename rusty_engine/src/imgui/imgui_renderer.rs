@@ -21,7 +21,7 @@ use crate::core::utils::*;
 use crate::renderer::vertex_buffer::*;
 use crate::renderer::index_buffer::*;
 use crate::renderer::graphics_pipeline::*;
-use crate::renderer::shader::*;
+use crate::renderer::shader_library::*;
 use crate::renderer::command_buffer::*;
 use crate::renderer::texture::*;
 use crate::renderer::renderer::*;
@@ -151,7 +151,7 @@ impl ImGuiRenderer
                     InstanceDataStepRate: 0
                 }
             ],
-            Shader: Shader::Create("assets/shaders/imgui_shader.hlsl"),
+            Shader: ShaderLibrary::GetShader("imgui_shader"),
             RenderTarget: RustyRef::CreateEmpty()
         };
 

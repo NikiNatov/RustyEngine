@@ -7,8 +7,6 @@ use std::borrow::Cow;
 
 // Win32
 use directx_math::*;
-use windows::Win32::Graphics::Dxgi::*;
-use windows::Win32::Graphics::Direct3D11::*;
 
 // imgui
 use imgui::*;
@@ -20,8 +18,9 @@ use rusty_engine::renderer::material::*;
 use rusty_engine::renderer::shader::*;
 use rusty_engine::renderer::shader_resource::*;
 use rusty_engine::renderer::shader_uniform::*;
-use rusty_engine::renderer::texture::*;
+use rusty_engine::core::asset_manager::*;
 use rusty_engine::renderer::mesh::*;
+use rusty_engine::renderer::texture::*;
 
 pub struct MaterialInspectorPanel
 {
@@ -95,24 +94,8 @@ impl MaterialInspectorPanel
                                         // We know it is safe to dereference the pointer since it points to a string owned by the content browser panel
                                         // and it lives through the whole application
                                         let texturePath = unsafe { &*payloadData.data };
-                                        let filename: &str = std::path::Path::new(texturePath).file_stem().unwrap().to_str().unwrap();
-
-                                        let textureDesc = TextureDescription {
-                                            Name: String::from(filename),
-                                            Width: 0,
-                                            Height: 0,
-                                            Format: DXGI_FORMAT_B8G8R8A8_UNORM,
-                                            BindFlags: D3D11_BIND_SHADER_RESOURCE,
-                                            MipCount: 7,
-                                            ImageData: vec![Some(rusty_engine::renderer::texture::Image::LoadFromFile(texturePath, false))]
-                                        };
-                                    
-                                        let samplerDesc = SamplerDescription {
-                                            Wrap: D3D11_TEXTURE_ADDRESS_WRAP,
-                                            Filter: D3D11_FILTER_ANISOTROPIC
-                                        };
-
-                                        selectedMaterial.GetRefMut().SetTexture(resource.GetName(), Texture::CreateTexture2D(&textureDesc, &samplerDesc));
+                                        let texture: RustyRef<Texture> = AssetManager::LoadTexture(texturePath, false);
+                                        selectedMaterial.GetRefMut().SetTexture(resource.GetName(), texture.clone());
                                     }
 
                                     target.pop();

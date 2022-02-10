@@ -8,7 +8,6 @@ use std::ptr::null;
 use directx_math::*;
 use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Direct3D11::*;
-use windows::Win32::Graphics::Dxgi::*;
 
 // Core
 use crate::core::utils::*;
