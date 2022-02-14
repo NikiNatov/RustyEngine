@@ -3,3 +3,4 @@ target-dir = "bin"
 
 [env]
 DEP_IMGUI_THIRD_PARTY = "vendor/imgui-rs/imgui-sys/third-party"
+LIBCLANG_PATH = "vendor/clang"

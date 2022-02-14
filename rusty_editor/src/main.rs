@@ -38,7 +38,7 @@ use rusty_engine::scene::scene::*;
 use rusty_engine::scene::entity::*;
 use rusty_engine::scene::component::*;
 
-pub struct EditorApp
+pub struct RustyEditorApp
 {
     m_IsRunning:       bool,
     m_Timer:           Timer,
@@ -68,12 +68,12 @@ pub struct EditorApp
     m_ContentBrowserPanel:    ContentBrowserPanel
 }
 
-impl EditorApp
+impl RustyEditorApp
 {
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
-    pub fn Create(windowWidth: u32, windowHeight: u32) -> EditorApp
+    pub fn Create(windowWidth: u32, windowHeight: u32) -> RustyEditorApp
     {
-        return EditorApp {
+        return RustyEditorApp {
             m_IsRunning: false,
             m_Timer: Timer::Create(),
             m_Window: Window::Create("Rusty Editor\0", windowWidth, windowHeight, true),
@@ -473,7 +473,7 @@ impl EditorApp
 
 fn main() 
 {
-    let mut app = EditorApp::Create(1600, 900);
+    let mut app = RustyEditorApp::Create(1600, 900);
     app.Initialize();
     app.Run();
 }

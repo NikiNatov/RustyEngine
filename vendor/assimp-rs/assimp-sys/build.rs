@@ -7,6 +7,7 @@ const BINDINGS_FILE: &str = "bindings.rs";
 const WRAPPER_FILE: &str = "wrapper.h";
 
 fn main() {
+    std::env::set_var("LIBCLANG_PATH", "assimp/bin");
     let (include, libdir, libname) = assimp_lib_data();
 
     println!("{}", include);

@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 
-// std
-use std::convert::TryInto;
+use std::borrow::Borrow;
 
 // Core
 use crate::core::event::*;
@@ -12,6 +11,7 @@ use crate::core::utils::*;
 
 // Win32
 use windows::Win32::Foundation::*;
+use windows::Win32::UI::Controls::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::Graphics::Gdi::*;
@@ -114,7 +114,7 @@ impl Window
             debug_assert!(self.m_Handle.0 != 0);
 
             // Create graphics context
-            self.m_GraphicsContext = RustyRef::CreateRef(GraphicsContext::Create(self));
+            self.m_GraphicsContext = GraphicsContext::Create(self);
 
             // Open the window
             ShowWindow(self.m_Handle, SW_MAXIMIZE);

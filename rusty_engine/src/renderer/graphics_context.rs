@@ -33,7 +33,7 @@ pub struct GraphicsContext
 impl GraphicsContext
 {
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
-    pub fn Create(window: &Window) -> GraphicsContext
+    pub fn Create(window: &Window) -> RustyRef<GraphicsContext>
     {
         unsafe
         {
@@ -153,7 +153,7 @@ impl GraphicsContext
             viewport.MinDepth = 0.0;
             viewport.MaxDepth = 1.0;
             
-            return GraphicsContext {
+            return RustyRef::CreateRef(GraphicsContext {
                 m_Adapter: adapter,
                 m_Device: device,
                 m_DeviceContext: deviceContext,
@@ -161,7 +161,7 @@ impl GraphicsContext
                 m_SwapChainRenderTargets: vec![swapChainRenderTarget],
                 m_SwapChainDepthStencil: swapChainDepthStencil,
                 m_Viewport: viewport
-            }
+            });
         }
     }
 
