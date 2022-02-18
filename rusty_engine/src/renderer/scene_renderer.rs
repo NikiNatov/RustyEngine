@@ -88,7 +88,7 @@ impl SceneRenderer
             m_SkyBoxMaterial: RustyRef::CreateEmpty(),
             m_CompositePipeline: RustyRef::CreateEmpty(),
             m_CompositeMaterial: RustyRef::CreateEmpty(),
-            m_Exposure: 1.0,
+            m_Exposure: 0.3,
         };
     }
 
@@ -220,6 +220,7 @@ impl SceneRenderer
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
     pub fn Flush(&mut self)
     {
+        self.PreRender();
         self.GeometryPass();
         self.CompositePass();
 
@@ -246,7 +247,13 @@ impl SceneRenderer
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
-    pub fn GeometryPass(&mut self)
+    fn PreRender(&mut self)
+    {
+        self.m_DrawList.sort_by_key(|cmd| { cmd.Material.GetRef().GetRenderFlags() & MaterialFlags::Transparent != MaterialFlags::None });
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------------------------------------------
+    fn GeometryPass(&mut self)
     {
         Renderer::BeginRenderPass(self.m_CommandBuffer.clone(), self.m_GeometryPipeline.GetRef().GetRenderTarget().clone(), true);
 
@@ -269,7 +276,7 @@ impl SceneRenderer
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
-    pub fn CompositePass(&mut self)
+    fn CompositePass(&mut self)
     {
         Renderer::BeginRenderPass(self.m_CommandBuffer.clone(), self.m_CompositePipeline.GetRef().GetRenderTarget().clone(), true);
 
@@ -280,7 +287,7 @@ impl SceneRenderer
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------
-    pub fn SwapChainPass(&mut self)
+    fn SwapChainPass(&mut self)
     {
         Renderer::BeginSwapChainRenderPass(self.m_CommandBuffer.clone(), true);
 

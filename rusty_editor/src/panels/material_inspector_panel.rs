@@ -120,7 +120,7 @@ impl MaterialInspectorPanel
                             ui.set_column_width(0, 150.0);
                             ui.text(uniform.GetName());
                             ui.next_column();
-
+                            
                             match uniform.GetType()
                             {
                                 ShaderUniformType::Float => {
@@ -198,29 +198,17 @@ impl MaterialInspectorPanel
 
                                 ShaderUniformType::Vec4 => {
 
-                                    let sliderWidth: f32 = ui.column_width(1) * 0.2;
+                                    let sliderWidth: f32 = ui.column_width(1) * 0.9;
                                     let mut values: XMFLOAT4 = *(selectedMaterial.GetRef().GetUniform::<XMFLOAT4>(uniform.GetName()));
-
+                                    
                                     let itemWidthToken = ui.push_item_width(sliderWidth);
 
-                                    let mut valueChanged: bool = false;
-                                    valueChanged |= imgui::Drag::new(im_str!("##X")).range(RangeInclusive::new(0.0, 1.0)).speed(0.01).build(ui, &mut values.x);
-
-                                    ui.same_line();
-                                    valueChanged |=imgui::Drag::new(im_str!("##Y")).range(RangeInclusive::new(0.0, 1.0)).speed(0.01).build(ui, &mut values.y);
-
-                                    ui.same_line();
-                                    valueChanged |=imgui::Drag::new(im_str!("##Z")).range(RangeInclusive::new(0.0, 1.0)).speed(0.01).build(ui, &mut values.z);
-
-                                    ui.same_line();
-                                    valueChanged |=imgui::Drag::new(im_str!("##W")).range(RangeInclusive::new(0.0, 1.0)).speed(0.01).build(ui, &mut values.w);
-
-                                    if valueChanged
+                                    if imgui::ColorEdit::new(im_str!("##Color4Uniform"), values.as_mut()).build(&ui)
                                     {
                                         selectedMaterial.GetRefMut().SetUniform(uniform.GetName(), values);
                                     }
 
-                                    itemWidthToken.pop(ui);
+                                    itemWidthToken.pop(&ui);
                                 }
 
                                 _ => {}

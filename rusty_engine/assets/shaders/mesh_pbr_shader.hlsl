@@ -68,7 +68,7 @@ cbuffer PSSystemLights : register(b0)
 
 cbuffer PSMaterialUniforms : register(b1)
 {
-    float3 AlbedoColor;
+    float4 AlbedoColor;
     bool UseAlbedoMap;
 
     bool UseNormalMap;
@@ -190,7 +190,7 @@ float3 GetNormalFromMap(float2 uv, float3 tangent, float3 bitangent, float3 norm
 
 float4 PSMain(in PSInput input) : SV_Target
 {
-    float4 albedoColor = UseAlbedoMap ? AlbedoMap.Sample(AlbedoMapSampler, input.UV).rgba : float4(AlbedoColor, 1.0);
+    float4 albedoColor = UseAlbedoMap ? AlbedoMap.Sample(AlbedoMapSampler, input.UV).rgba : AlbedoColor;
     float3 normal = UseNormalMap ? GetNormalFromMap(input.UV, input.Tangent, input.Bitangent, input.Normal) : input.Normal;
     float  metalness = UseMetalnessMap ? MetalnessMap.Sample(MetalnessMapSampler, input.UV).r : Metalness;
     float  roughness = UseRoughnessMap ? RoughnessMap.Sample(RoughnessMapSampler, input.UV).r : Roughness;

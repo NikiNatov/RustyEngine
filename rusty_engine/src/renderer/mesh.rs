@@ -145,7 +145,7 @@ impl Mesh
 
             // Create the material for the submesh
             let material: RustyRef<Material> = Material::Create("UnnamedMaterial", ShaderLibrary::GetShader("mesh_pbr_shader"), MaterialFlags::None);
-            let mut materialFlags: MaterialFlags = MaterialFlags::None;
+            let mut materialFlags: MaterialFlags = MaterialFlags::TwoSided;
 
             let parentDirectory = Path::new(filepath).parent().unwrap().to_str().unwrap();
 
@@ -171,7 +171,7 @@ impl Mesh
                     {
                         russimp::material::PropertyTypeInfo::FloatArray(color) => 
                         {
-                            material.GetRefMut().SetUniform("AlbedoColor", XMFLOAT3::set(color[0], color[1], color[2]));
+                            material.GetRefMut().SetUniform("AlbedoColor", XMFLOAT4::set(color[0], color[1], color[2], 1.0));
                         }
                         _ => debug_assert!(false, "Invalid value type!")
                     }
@@ -273,6 +273,10 @@ impl Mesh
                             if opacity[0] < 1.0
                             {
                                 materialFlags |= MaterialFlags::Transparent;
+                                
+                                let mut albedoColor = *material.GetRef().GetUniform::<XMFLOAT4>("AlbedoColor");
+                                albedoColor.w = opacity[0];
+                                material.GetRefMut().SetUniform("AlbedoColor", albedoColor);
                             }
                         }
                         _ => debug_assert!(false, "Invalid value type!")

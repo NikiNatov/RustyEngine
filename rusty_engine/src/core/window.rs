@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use std::borrow::Borrow;
+use std::os::windows::prelude::OsStrExt;
 
 // Core
 use crate::core::event::*;
@@ -11,6 +12,7 @@ use crate::core::utils::*;
 
 // Win32
 use windows::Win32::Foundation::*;
+use windows::Win32::Graphics::Dwm::*;
 use windows::Win32::UI::Controls::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
@@ -112,12 +114,18 @@ impl Window
 
             // Check for correct inizializations
             debug_assert!(self.m_Handle.0 != 0);
+            
+            // Set dark theme
+            let useDarkMode = BOOL::from(true);
+            SetWindowTheme(self.m_Handle, "DarkMode_Explorer\0", PWSTR(std::ptr::null_mut() as _)).expect("");
+            DwmSetWindowAttribute(self.m_Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode as *const _ as _, std::mem::size_of_val(&useDarkMode) as _).expect("Failed to set dark theme!");
 
             // Create graphics context
             self.m_GraphicsContext = GraphicsContext::Create(self);
 
             // Open the window
             ShowWindow(self.m_Handle, SW_MAXIMIZE);
+
         }
     }
 
