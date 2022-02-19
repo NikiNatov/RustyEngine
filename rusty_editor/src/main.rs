@@ -269,10 +269,11 @@ impl RustyEditorApp
                 }
                 
                 let selectedEntity: Entity = self.m_SceneHierarchyPanel.GetSelectedEntity();
-                if selectedEntity.IsValid() && selectedEntity.HasComponent::<MeshComponent>()
+                if  !selectedEntity.IsValid() ||
+                    !self.m_MaterialInspectorPanel.GetSelectedEntity().IsValid() || 
+                    selectedEntity.GetID() != self.m_MaterialInspectorPanel.GetSelectedEntity().GetID()
                 {
-                    let meshPath = self.m_SceneHierarchyPanel.GetSelectedEntity().GetComponent::<MeshComponent>().MeshPath.clone();
-                    self.m_MaterialInspectorPanel.SetSelectedMesh(AssetManager::GetMesh(&meshPath));
+                    self.m_MaterialInspectorPanel.SetSelectedEntity(selectedEntity);
                 }
 
                 // Pannels
