@@ -56,6 +56,7 @@ impl Window
                 cbClsExtra: 0,
                 cbWndExtra: 0,
                 hInstance: GetModuleHandleA(None),
+                hIcon: HICON(LoadImageA(GetModuleHandleA(None), "resources/icons/editor_icon.ico\0", IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED).0),
                 lpszClassName: PSTR("Rusty Engine Window\0".as_ptr() as _),
                 ..Default::default()
             };
