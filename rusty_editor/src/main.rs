@@ -40,27 +40,27 @@ use rusty_engine::scene::component::*;
 
 pub struct RustyEditorApp
 {
-    m_IsRunning:       bool,
-    m_Timer:           Timer,
-    m_Window:          Window,
-    m_ImGuiPlatform:   ImGuiPlatform,
-    m_ImGuiRenderer:   ImGuiRenderer,
+    m_IsRunning:              bool,
+    m_Timer:                  Timer,
+    m_Window:                 Window,
+    m_ImGuiPlatform:          ImGuiPlatform,
+    m_ImGuiRenderer:          ImGuiRenderer,
     
-    m_SceneRenderer:   SceneRenderer,
-    m_Scene:           RustyRef<Scene>,
+    m_SceneRenderer:          SceneRenderer,
+    m_Scene:                  RustyRef<Scene>,
+    
+    m_ViewportFocused:        bool,
+    m_ViewportHovered:        bool,
+    m_ViewportSize:           XMFLOAT2,
+    m_GizmoOperation:         imguizmo::Operation,
 
-    m_ViewportFocused: bool,
-    m_ViewportHovered: bool,
-    m_ViewportSize:    XMFLOAT2,
-    m_GizmoOperation:  imguizmo::Operation,
-
-    m_FolderIcon:    RustyRef<Texture>,
-    m_PNGIcon:       RustyRef<Texture>,
-    m_JPGIcon:       RustyRef<Texture>,
-    m_TGAIcon:       RustyRef<Texture>,
-    m_HDRIcon:       RustyRef<Texture>,
-    m_FBXIcon:       RustyRef<Texture>,
-    m_RSceneIcon:    RustyRef<Texture>,
+    m_FolderIcon:             RustyRef<Texture>,
+    m_PNGIcon:                RustyRef<Texture>,
+    m_JPGIcon:                RustyRef<Texture>,
+    m_TGAIcon:                RustyRef<Texture>,
+    m_HDRIcon:                RustyRef<Texture>,
+    m_FBXIcon:                RustyRef<Texture>,
+    m_RSceneIcon:             RustyRef<Texture>,
 
     // Panels
     m_SceneHierarchyPanel:    SceneHierarchyPanel,
@@ -238,16 +238,22 @@ impl RustyEditorApp
                         if imgui::MenuItem::new(im_str!("Open Scene")).shortcut(im_str!("Ctrl+O")).build(&ui)
                         {
                             let scenePath = OpenFile(String::from("Rusty Scene (*.rscene)\0*.rscene\0"));
-                            self.m_Scene = Scene::Create();
-                            self.m_Scene.GetRefMut().Deserialize(&scenePath);
-                            self.m_SceneHierarchyPanel.SetContext(self.m_Scene.clone());
-                            Console::LogInfo("Scene opened successfully!");
+                            if std::path::Path::new(&scenePath).exists()
+                            {
+                                self.m_Scene = Scene::Create();
+                                self.m_Scene.GetRefMut().Deserialize(&scenePath);
+                                self.m_SceneHierarchyPanel.SetContext(self.m_Scene.clone());
+                                Console::LogInfo("Scene opened successfully!");
+                            }
                         }
                         if imgui::MenuItem::new(im_str!("Save As")).shortcut(im_str!("Ctrl+S")).build(&ui)
                         {
                             let scenePath = SaveFile(String::from("Rusty Scene (*.rscene)\0*.rscene\0"));
-                            self.m_Scene.GetRef().Serialize(&scenePath);
-                            Console::LogInfo("Scene saved successfully!");
+                            if !scenePath.is_empty()
+                            {
+                                self.m_Scene.GetRef().Serialize(&scenePath);
+                                Console::LogInfo("Scene saved successfully!");
+                            }
                         }
                         menuToken.end();
                     }
@@ -268,12 +274,10 @@ impl RustyEditorApp
                     rendererInfo.end();
                 }
                 
-                
-
                 // Pannels
                 Console::OnImGuiRender(&ui);
                 self.m_SceneHierarchyPanel.OnImGuiRender(&ui);
-                
+
                 let selectedEntity: Entity = self.m_SceneHierarchyPanel.GetSelectedEntity();
                 if  !selectedEntity.IsValid() ||
                     !self.m_MaterialInspectorPanel.GetSelectedEntity().IsValid() || 
