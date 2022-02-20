@@ -268,6 +268,12 @@ impl RustyEditorApp
                     rendererInfo.end();
                 }
                 
+                
+
+                // Pannels
+                Console::OnImGuiRender(&ui);
+                self.m_SceneHierarchyPanel.OnImGuiRender(&ui);
+                
                 let selectedEntity: Entity = self.m_SceneHierarchyPanel.GetSelectedEntity();
                 if  !selectedEntity.IsValid() ||
                     !self.m_MaterialInspectorPanel.GetSelectedEntity().IsValid() || 
@@ -276,9 +282,6 @@ impl RustyEditorApp
                     self.m_MaterialInspectorPanel.SetSelectedEntity(selectedEntity);
                 }
 
-                // Pannels
-                Console::OnImGuiRender(&ui);
-                self.m_SceneHierarchyPanel.OnImGuiRender(&ui);
                 self.m_MaterialInspectorPanel.OnImGuiRender(&ui, &mut self.m_ImGuiRenderer);
                 self.m_ContentBrowserPanel.OnImGuiRender(&ui);
 
